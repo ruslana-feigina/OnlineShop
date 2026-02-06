@@ -1,16 +1,31 @@
+import cart.Cart;
+import cart.CartItem;
+import customer.Customer;
+import delivery.Delivery;
+import discount.PercentageDiscount;
+import exceptions.*;
+import interfaces.*;
+import inventory.Inventory;
+import order.Order;
+import payment.Payment;
+import product.Product;
+
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter customer name: ");
-        String customerName = scanner.nextLine().trim();
-        while (customerName.isEmpty()) {
-            System.out.println("Name cannot be blank. Try again.");
-            customerName = scanner.nextLine().trim();
+        Customer customer = null;
+        while (customer == null) {
+            System.out.print("Enter customer name: ");
+            String customerName = scanner.nextLine().trim();
+            try {
+                customer = new Customer(customerName);
+            } catch (InvalidNameException e) {
+                System.out.println("[Input] " + e.getMessage());
+            }
         }
-        Customer customer = new Customer(customerName);
         System.out.println(customer.getName() + ", welcome to our Online Shop!");
 
         Product laptop = new Product("Laptop", 25000.0);
@@ -22,13 +37,26 @@ public class Main {
         Inventory mouseStock = new Inventory(mouse, 10);
 
         Cart cart = new Cart();
-        cart.addItem(new CartItem(laptop, 1), laptopStock);
-        cart.addItem(new CartItem(phone, 1), phoneStock);
-        cart.addItem(new CartItem(mouse, 2), mouseStock);
+        try {
+            cart.addItem(new CartItem(laptop, 1), laptopStock);
+        } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
+            System.out.println("[Cart] " + e.getMessage());
+        }
+
+        try {
+            cart.addItem(new CartItem(phone, 1), phoneStock);
+        } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
+            System.out.println("[Cart] " + e.getMessage());
+        }
+
+        try {
+            cart.addItem(new CartItem(mouse, 2), mouseStock);
+        } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
+            System.out.println("[Cart] " + e.getMessage());
+        }
 
         Order order = new Order(customer, cart);
         Trackable trackableOrder = order;
-        Cancellable cancellableOrder = order;
         Notifiable notifiableOrder = order;
 
         trackableOrder.updateStatus("Created");
@@ -40,17 +68,23 @@ public class Main {
         double totalAfterDiscount = discount.apply(order.getTotalPrice());
 
         Payment payment = new Payment(totalAfterDiscount, "Card");
-        Notifiable notifiablePayment = payment;
-        Refundable refundablePayment = payment;
+        while (true) {
+            System.out.print("Enter payment method (Card, Cash, Online) [default Card]: ");
+            String method = scanner.nextLine().trim();
+            if (method.isEmpty()) method = "Card";
 
-        System.out.print("Enter payment method (Card, Cash, Online) [default Card]: ");
-        String method = scanner.nextLine().trim();
-        if (method.isEmpty()) method = "Card";
-        payment.setMethod(method);
+            try {
+                payment.setMethod(method);
+                break;
+            } catch (UnsupportedMethodException e) {
+                System.out.println("[Payment] " + e.getMessage());
+            }
+        }
 
         payment.processPayment();
         trackableOrder.updateStatus("Paid");
         notifiableOrder.notifyUser("Payment successful!");
+        payment.notifyUser("Thank you for your payment!");
 
         for (CartItem item : cart.getItems()) {
             Inventory stock = null;
@@ -69,7 +103,11 @@ public class Main {
             }
 
             if (stock != null) {
-                stock.reduceStock(item.getQuantity());
+                try {
+                    stock.reduceStock(item.getQuantity());
+                } catch (InvalidQuantityException | OutOfStockException e) {
+                    System.out.println("[Stock] " + e.getMessage());
+                }
             }
         }
 
@@ -110,7 +148,7 @@ public class Main {
         notifiableOrder.notifyUser("Your order has been delivered.");
 
         Reviewable reviewableLaptop = laptop;
-        System.out.print("Would you like to leave a review for the Laptop? (yes/no): ");
+        System.out.print("Would you like to leave a review for your order? (yes/no): ");
         String leaveReview = scanner.nextLine();
         if (leaveReview.equalsIgnoreCase("yes")) {
             System.out.print("Enter your review comment: ");
