@@ -1,35 +1,35 @@
 package inventory;
 
+import exceptions.OutOfStockException;
 import product.Product;
 import exceptions.InvalidQuantityException;
-import exceptions.OutOfStockException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Inventory {
-    private Product product;
-    private int quantity;
+    private final Map<Product, Integer> stock = new HashMap<>();
 
-    public Inventory(Product product, int quantity) {
-        this.product = product;
-        this.quantity = quantity;
+    public void addProduct(Product product, int quantity) {
+        stock.put(product, quantity);
     }
 
-    public Product getProduct() { return product; }
-
-    public void setProduct(Product product) { this.product = product; }
-
-    public int getQuantity() { return quantity; }
-
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-
-    public boolean isAvailable(int neededQuantity) {
-        return neededQuantity <= quantity;
+    public boolean isAvailable(Product product, int needed) {
+        if (product == null) return false;
+        return stock.getOrDefault(product, 0) >= needed;
     }
 
-    public void reduceStock(int sold) throws OutOfStockException, InvalidQuantityException {
+    public void reduceStock(Product product, int sold)
+            throws OutOfStockException, InvalidQuantityException {
+
         if (sold <= 0) throw new InvalidQuantityException(sold);
-        if (sold > quantity) throw new OutOfStockException(product.getName(), quantity, sold);
 
-        quantity -= sold;
-        System.out.println(sold + " units of " + product.getName() + " sold. Remaining: " + quantity);
+        int available = stock.getOrDefault(product, 0);
+        if (sold > available) {
+            throw new OutOfStockException(product.getName(), available, sold);
+        }
+
+        stock.put(product, available - sold);
     }
+
+    public int getQuantity(Product product) { return stock.getOrDefault(product, 0); }
 }

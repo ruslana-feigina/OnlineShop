@@ -32,25 +32,31 @@ public class Main {
         Product phone = new Product("Smartphone", 15000.0);
         Product mouse = new Product("Mouse", 500.0);
 
-        Inventory laptopStock = new Inventory(laptop, 5);
-        Inventory phoneStock = new Inventory(phone, 0);
-        Inventory mouseStock = new Inventory(mouse, 10);
+        GenericBox<Product> productGenericBox = new GenericBox<>();
+        productGenericBox.put(laptop);
+        Product boxedProduct = productGenericBox.get();
+        System.out.println("Featured product: " + boxedProduct.getName());
+
+        Inventory inventory = new Inventory();
+        inventory.addProduct(laptop, 5);
+        inventory.addProduct(phone, 0);
+        inventory.addProduct(mouse, 10);
 
         Cart cart = new Cart();
         try {
-            cart.addItem(new CartItem(laptop, 1), laptopStock);
+            cart.addItem(new CartItem(laptop, 1), inventory);
         } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
             System.out.println("[Cart] " + e.getMessage());
         }
 
         try {
-            cart.addItem(new CartItem(phone, 1), phoneStock);
+            cart.addItem(new CartItem(phone, 1), inventory);
         } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
             System.out.println("[Cart] " + e.getMessage());
         }
 
         try {
-            cart.addItem(new CartItem(mouse, 2), mouseStock);
+            cart.addItem(new CartItem(mouse, 2), inventory);
         } catch (InvalidQuantityException | OutOfStockException | CartFullException e) {
             System.out.println("[Cart] " + e.getMessage());
         }
@@ -87,27 +93,10 @@ public class Main {
         payment.notifyUser("Thank you for your payment!");
 
         for (CartItem item : cart.getItems()) {
-            Inventory stock = null;
-            switch (item.getProduct().getName()) {
-                case "Laptop":
-                    stock = laptopStock;
-                    break;
-                case "Smartphone":
-                    stock = phoneStock;
-                    break;
-                case "Mouse":
-                    stock = mouseStock;
-                    break;
-                default:
-                    stock = null;
-            }
-
-            if (stock != null) {
-                try {
-                    stock.reduceStock(item.getQuantity());
-                } catch (InvalidQuantityException | OutOfStockException e) {
-                    System.out.println("[Stock] " + e.getMessage());
-                }
+            try {
+                inventory.reduceStock(item.getProduct(), item.getQuantity());
+            } catch (InvalidQuantityException | OutOfStockException e) {
+                System.out.println("[Stock] " + e.getMessage());
             }
         }
 
@@ -148,7 +137,7 @@ public class Main {
         notifiableOrder.notifyUser("Your order has been delivered.");
 
         Reviewable reviewableLaptop = laptop;
-        System.out.print("Would you like to leave a review for your order? (yes/no): ");
+        System.out.print("Would you like to leave a review for the laptop? (yes/no): ");
         String leaveReview = scanner.nextLine();
         if (leaveReview.equalsIgnoreCase("yes")) {
             System.out.print("Enter your review comment: ");
