@@ -44,7 +44,6 @@ public class Order extends OrderEntity implements Cancellable, Notifiable, Track
         System.out.println("Order status updated to: " + status);
     }
 
-
     @Override
     public void notifyUser(String message) {
         System.out.println("Notification to " + customer.getName() + ": " + message);
@@ -54,6 +53,6 @@ public class Order extends OrderEntity implements Cancellable, Notifiable, Track
     public void cancel() {
         this.valid = false;
         this.status = "Cancelled";
-        System.out.println("order.Order cancelled.");
+        System.out.println("Order cancelled.");
     }
 }
